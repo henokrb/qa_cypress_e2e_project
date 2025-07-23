@@ -1,45 +1,40 @@
 /// <reference types='cypress' />
 /// <reference types='../support' />
 
-import SignInPageObject from '../support/pages/signIn.pageObject';
-import HomePageObject from '../support/pages/home.pageObject';
-
-const signInPage = new SignInPageObject();
-const homePage = new HomePageObject();
+import SignUpPageObject from '../support/pages/signUp.pageObject';
 
 describe('Sign Up page', () => {
-  let username;
-  let email;
-  let password;
-
-  before(() => {});
+  let user;
+  const signUpPage = new SignUpPageObject();
 
   beforeEach(() => {
     cy.task('db:clear');
-    cy.task('generateUser').then((user) => {
-      username = user.username;
-      email = user.email;
-      password = user.password;
+
+    cy.task('generateUser').then((generatedUser) => {
+      user = generatedUser;
     });
+
+    signUpPage.visit();
   });
 
-  it('should sign up succefully', () => {
-    signInPage.visit();
-    cy.register(email, username, password);
+  it('should create a user with valid credentials', function () {
+    signUpPage.fillForm(user);
+    signUpPage.clickOnSubmitButton();
+
+    signUpPage.checkUsernameValue(user.username);
   });
 
-  it('should not sign up if invalid email', () => {
-    homePage.visit();
-    cy.contains('a', 'Sign up').click();
+  it(`should not allow to create a user with invalid email`, function () {
+    signUpPage.fillForm({ ...user, email: '123456' });
+    signUpPage.clickOnSubmitButton();
 
-    cy.get('input[placeholder="Username"]').type('Name12345');
-    cy.get('input[placeholder="Email"]').type('invalid email');
-    cy.get('input[placeholder="Password"]').type('123132');
+    signUpPage.checkModalTitle('Registration failed!');
+  });
 
-    cy.contains('button', 'Sign up').click();
+  it(`should not allow to create a user with invalid password`, function () {
+    signUpPage.fillForm({ ...user, password: '123456' });
+    signUpPage.clickOnSubmitButton();
 
-    cy.contains('div[class="swal-title"]', 'Registration failed!').should(
-      'be.visible'
-    );
+    signUpPage.checkModalTitle('Registration failed!');
   });
 });
